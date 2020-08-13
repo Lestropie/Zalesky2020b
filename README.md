@@ -1,11 +1,15 @@
 The data and code in this repository are written in response to:
 
+```
 Andrew Zalesky, Tabinda Sarwar, Ramamohanarao Kotagiri
 SIFT in pathological connectomes: Follow‐up response to Smith and colleagues
 Magnetic Resonance in Medicine, 2020, 84(5), 2308-2311
+```
 
-For previous demonstrations see:
+For previous demonstrations in this article series see:
+
 http://github.com/Lestropie/Sarwar2019
+
 http://github.com/Lestropie/Zalesky2020
 
 ## Example 1: Multifocal lesions
@@ -13,19 +17,25 @@ http://github.com/Lestropie/Zalesky2020
 ![E1_GMWMI](images/E1_GMWMI.png)
 
 File `script_2path` reproduces this simulated pathology under a number of different experimental scenarios.
+
 The originally reported issue reported error in quantification (an erroneous 14% increase in bundle 2 in the patient) arises specifically due to the isolated voxel in bundle 1 that has non-zero fibre density but zero streamlines density.
+
 As demonstrated by the output of the script (see below), this issue only occurs if *all of the following three* are true:
 
 1.  SIFT is used rather than SIFT2.
+
     While the "non-integer solution"—intended to mimic the SIFT2 method—was reported to suffer from this issue, the actual SIFT2 method itself *does not*.
 
 2.  Seeding is performed exclusively from the bundle endpoints (akin to seeding from the GM-WM interface).
+
     In populations where multiple large lesions may make entire regions of white matter accessible to streamlines tractography, despite seeding from all cortical and sub-cortical grey matter regions, I would recommend using some other seeding mechanism.
 
-    ![E2_dynamic](images/E2_dynamic.png)
+    ![E1_dynamic](images/E1_dynamic.png)
 
 3.  Fixels with no streamlines density are nevertheless retained in the model, rather than being removed prior to optimisation.
-    The original rationale for this being the default command behaviour is no longer relevant following the recent formal definition of [the Fibre Bundle Capacity (FBC) metric](https://osf.io/c67kn/); as such, this behaviour was already slated for change in a future *MRtrix3* update.
+
+    The original rationale for this being the default command behaviour is no longer relevant following the recent formal definition of [the Fibre Bundle Capacity (FBC) metric](https://osf.io/c67kn/); as such, this behaviour was already slated for change in a future *MRtrix3* update, though this has not yet occurred at time of writing.
+
     Use of [the existing `-remove_untracked` command-line option in the `tcksift` command](https://mrtrix.readthedocs.io/en/latest/reference/commands/tcksift.html#options-affecting-the-sift-model) demonstrates that this change also resolves this specific issue.
 
 #### Experimental output
