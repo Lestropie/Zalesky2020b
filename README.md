@@ -6,11 +6,15 @@ SIFT in pathological connectomes: Follow‐up response to Smith and colleagues
 Magnetic Resonance in Medicine, 2020, 84(5), 2308-2311
 ```
 
-For previous demonstrations in this article series see:
+-----
+
+This repository is the third of three demonstrations related to a series of articles in the Magnetic Resonance in Medicine journal. For demonstrations related to prior articles see:
 
 http://github.com/Lestropie/Sarwar2019
 
 http://github.com/Lestropie/Zalesky2020
+
+-----
 
 ## Example 1: Multifocal lesions
 
