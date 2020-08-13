@@ -1,0 +1,142 @@
+#!/bin/bash
+
+declare -a bundles=("1" "2")
+declare -a methods=("SIFT" "SIFT2")
+declare -a seeds=("gmwmi" "wm" "dynamic")
+declare -a sides=("left" "right")
+declare -a sift_untracked_fixels_options=("keep" "remove")
+declare -a subjects=("patient" "control")
+
+
+rm -rf tmp/
+mkdir tmp/
+
+
+for seed in "${seeds[@]}"; do
+
+    for subject in "${subjects[@]}"; do
+
+        case ${subject} in
+        "patient")
+            FODIMAGE="data/FODs_2path.mif"
+            MASKIMAGE="data/mask_2path.mif"
+            ;;
+        "control")
+            FODIMAGE="data/FODs_control.mif"
+            MASKIMAGE="data/mask.mif"
+            ;;
+        esac
+
+        case ${seed} in
+        "dynamic")
+            tckgen ${FODIMAGE} -algorithm sd_stream -seed_direction 1,0,0 -minlength 0 -step 0.001 -select 80 -seed_dynamic ${FODIMAGE} -mask ${MASKIMAGE} tmp/tracks_${subject}_seeddynamic.tck -quiet
+            ;;
+        "gmwmi")
+            track_file_list=""
+            for bundle in "${bundles[@]}"; do
+                for side in "${sides[@]}"; do
+
+                    tracks_path=tmp/tracks_${subject}_seedgmwmi_B${bundle}_${side}.tck
+                    tckgen ${FODIMAGE} -algorithm sd_stream -seed_direction 1,0,0 -minlength 0 -step 0.001 -select 20 -seed_image data/mask_B${bundle}_${side}.mif -mask ${MASKIMAGE} tmp/tracks_${subject}_seedgmwmi_B${bundle}_${side}.tck -quiet
+                    track_file_list="${track_file_list} ${tracks_path}"
+
+                done
+            done
+            tckedit ${track_file_list} tmp/tracks_${subject}_seedgmwmi.tck -quiet
+            ;;
+        "wm")
+            tckgen ${FODIMAGE} -algorithm sd_stream -seed_direction 1,0,0 -minlength 0 -step 0.001 -seed_random_per_voxel ${MASKIMAGE} 8 -mask ${MASKIMAGE} tmp/tracks_${subject}_seedwm.tck -quiet
+            ;;
+        esac
+
+    done
+
+done
+
+
+
+echo " Method |   Seeding   | Untracked fixels |    % B1    |    % B2    "
+echo "--------+-------------+------------------+------------+------------"
+
+
+
+for method in "${methods[@]}"; do
+
+    for seed in "${seeds[@]}"; do
+
+    case ${seed} in
+        "dynamic")
+             SEEDSTRING="Dynamic"
+            ;;
+        "gmwmi")
+             SEEDSTRING="GM-WM_Int. "
+            ;;
+        "wm")
+             SEEDSTRING="Homogeneous"
+            ;;
+        esac
+
+        for fixels in "${sift_untracked_fixels_options[@]}"; do
+
+            remove_untracked_option=""
+            if [[ ${fixels} == "remove" ]]; then
+                remove_untracked_option=" -remove_untracked"
+                 FIXELSTRING="Remove"
+            else
+                 FIXELSTRING="Retain"
+            fi
+
+            case ${method} in
+            "SIFT")
+
+                for subject in "${subjects[@]}"; do
+                    case ${subject} in
+                    "patient")
+                        FODIMAGE="data/FODs_2path.mif"
+                        ;;
+                    "control")
+                        FODIMAGE="data/FODs_control.mif"
+                        ;;
+                    esac
+                    tcksift tmp/tracks_${subject}_seed${seed}.tck ${FODIMAGE} tmp/tracks_${subject}_seed${seed}_${fixels}_SIFT.tck -out_mu tmp/mu_${subject}_seed${seed}_${fixels}_SIFT.txt -term_number 1 ${remove_untracked_option} -quiet
+                    for bundle in "${bundles[@]}"; do
+                        tckedit tmp/tracks_${subject}_seed${seed}_${fixels}_SIFT.tck -include data/mask_B${bundle}_left.mif -include data/mask_B${bundle}_right.mif tmp/tracks_${subject}_seed${seed}_${fixels}_SIFT_B${bundle}.tck -quiet
+                    done
+                done
+
+                MU_PATIENT=$(cat tmp/mu_patient_seed${seed}_${fixels}_SIFT.txt)
+                MU_CONTROL=$(cat tmp/mu_control_seed${seed}_${fixels}_SIFT.txt)
+                FBC_PATIENT_B1=$(echo "$MU_PATIENT * $(tckinfo tmp/tracks_patient_seed${seed}_${fixels}_SIFT_B1.tck | grep " count" | tr -d '[:space:]' | cut -d":" -f2)" | bc)
+                FBC_PATIENT_B2=$(echo "$MU_PATIENT * $(tckinfo tmp/tracks_patient_seed${seed}_${fixels}_SIFT_B2.tck | grep " count" | tr -d '[:space:]' | cut -d":" -f2)" | bc)
+                FBC_CONTROL_B1=$(echo "$MU_CONTROL * $(tckinfo tmp/tracks_control_seed${seed}_${fixels}_SIFT_B1.tck | grep " count" | tr -d '[:space:]' | cut -d":" -f2)" | bc)
+                FBC_CONTROL_B2=$(echo "$MU_CONTROL * $(tckinfo tmp/tracks_control_seed${seed}_${fixels}_SIFT_B2.tck | grep " count" | tr -d '[:space:]' | cut -d":" -f2)" | bc)
+                ;;
+
+            "SIFT2")
+
+                for subject in "${subjects[@]}"; do
+                    tcksift2 tmp/tracks_${subject}_seed${seed}.tck ${FODIMAGE} tmp/weights_${subject}_seed${seed}_${fixels}.txt -out_mu tmp/mu_${subject}_seed${seed}_${fixels}_SIFT2.txt ${remove_untracked_option} -quiet
+                    for bundle in "${bundles[@]}"; do
+                        tckedit tmp/tracks_${subject}_seed${seed}.tck -tck_weights_in tmp/weights_${subject}_seed${seed}_${fixels}.txt -include data/mask_B${bundle}_left.mif -include data/mask_B${bundle}_right.mif tmp/tracks_${subject}_seed${seed}_${fixels}_SIFT2_B${bundle}.tck -tck_weights_out tmp/weights_${subject}_seed${seed}_${fixels}_B${bundle}.txt -quiet
+                    done
+                done
+
+                MU_PATIENT=$(cat tmp/mu_patient_seed${seed}_${fixels}_SIFT2.txt)
+                MU_CONTROL=$(cat tmp/mu_control_seed${seed}_${fixels}_SIFT2.txt)
+                FBC_PATIENT_B1="0.0"
+                FBC_PATIENT_B2=$(tail -n1 tmp/weights_patient_seed${seed}_${fixels}_B2.txt | tr " " "+" | sed 's/\(.*\)+$/\1/' | awk -v mu=${MU_PATIENT} '{printf("scale=6; %s*(%s)\n",mu,$1)}' | bc)
+                FBC_CONTROL_B1=$(tail -n1 tmp/weights_control_seed${seed}_${fixels}_B1.txt | tr " " "+" | sed 's/\(.*\)+$/\1/' | awk -v mu=${MU_CONTROL} '{printf("scale=6; %s*(%s)\n",mu,$1)}' | bc)
+                FBC_CONTROL_B2=$(tail -n1 tmp/weights_control_seed${seed}_${fixels}_B2.txt | tr " " "+" | sed 's/\(.*\)+$/\1/' | awk -v mu=${MU_CONTROL} '{printf("scale=6; %s*(%s)\n",mu,$1)}' | bc)
+                ;;
+
+             esac
+
+             EFFECTSIZE_B1=$(echo "scale=6; 100*(${FBC_CONTROL_B1}-${FBC_PATIENT_B1})/${FBC_CONTROL_B1}" | bc)
+             EFFECTSIZE_B2=$(echo "scale=6; 100*(${FBC_CONTROL_B2}-${FBC_PATIENT_B2})/${FBC_CONTROL_B2}" | bc)
+
+             printf "%7s | %11s | %16s | %10.6f | %10.6f\n" ${method} ${SEEDSTRING} ${FIXELSTRING} ${EFFECTSIZE_B1} ${EFFECTSIZE_B2}
+
+        done
+    done
+done
+
