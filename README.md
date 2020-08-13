@@ -1,10 +1,11 @@
-The data and code in this repository are written in response to:
+The data and code in this repository are written in response to the [article](https://onlinelibrary.wiley.com/doi/10.1002/mrm.28412):
 
-```
-Andrew Zalesky, Tabinda Sarwar, Ramamohanarao Kotagiri
-SIFT in pathological connectomes: Follow‐up response to Smith and colleagues
-Magnetic Resonance in Medicine, 2020, 84(5), 2308-2311
-```
+    Andrew Zalesky, Tabinda Sarwar, Ramamohanarao Kotagiri
+    SIFT in pathological connectomes: Follow‐up response to Smith and colleagues
+    Magnetic Resonance in Medicine, 2020, 84(5), 2308-2311
+
+The contents of this document are a personal response written with the intention of clarifying the novel exmples presented in that article and how the SIFT and SIFT2 algorithms as implemented in [*MRtrix3*](http://github.com/MRtrix3/mrtrix3) operate on such data.
+It is a stand-alone document with no associated journal publication.
 
 -----
 
