@@ -33,7 +33,7 @@ As demonstrated by the output of the script (see below), this issue only occurs 
 
 2.  Seeding is performed exclusively from the bundle endpoints (akin to seeding from the GM-WM interface).
 
-    In populations where multiple large lesions may make entire regions of white matter accessible to streamlines tractography, despite seeding from all cortical and sub-cortical grey matter regions, I would recommend using some other seeding mechanism.
+    In populations where multiple large lesions may make entire regions of white matter accessible to streamlines tractography, despite seeding from all cortical and sub-cortical grey matter regions (e.g. see seeds indicated by white arrow in image above), I would recommend using some other seeding mechanism; e.g. the recommended "[dynamic seeding](https://www.sciencedirect.com/science/article/pii/S1053811915005972#s0085)" as shown below:
 
     ![E1_dynamic](images/E1_dynamic.png)
 
@@ -65,7 +65,7 @@ $ ./script_2path
 
 ## Example 2: Shear force
 
-The proposed construction of this phantom assumes that upon encountering a voxel in which the fibre orientation differs from that of the previous voxel, some fraction of streamlines immediately terminate at the interface between those two voxels.
+The proposed construction of this phantom assumes that upon encountering a voxel in which the fibre orientation differs from that of the previous voxel, some fraction of streamlines immediately terminate at the interface between those two voxels (highlighted by white arrows in image below).
 Any streamlines tractography algorithm that operated in this fashion would be severely limited in its ability to reconstruct any white matter bundle that is not perfectly straight.
 
 ![E2_truncate](images/E2_truncate.png)
@@ -81,7 +81,8 @@ This is faithful to both the original premise, and the empirical behaviour of st
 
 In this scenario all filtering methods converge toward an approx. 26% effect size in the affected bundle.
 While this is not equivalent to the 40% reduction in streamline count, that metric is *not* a gold standard measure of "magnitude of pathology" in this case.
-The biological connectivity of this bundle depends on the precise contents of the central pathological voxel-how many axons are fully intact and how many are bisected-which was not provided and cannot be unambiguously inferred from the FOD data or the description of the pathology.
+The biological connectivity of this bundle depends on the precise contents of the central pathological voxel—how many axons are fully intact and how many are bisected—which was not provided and cannot be unambiguously inferred from the FOD data or the description of the pathology.
+The image below is intended to demonstrate this ambiguity for further consideration:
 
 ![bundle_shear](images/bundle_shear.png)
 
